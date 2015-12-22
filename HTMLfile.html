@@ -1,0 +1,192 @@
+
+<!-- saved from url=(0113)file:///D:/Working%20folder/Courses/Coursera%20Data%20Science/Practical%20Maching%20Learning/Assignment/html.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Practical maching learning assignment</title>
+</head>
+
+<body>
+
+<p>The goal of the assignment was to build the prediction model for "classe" variable. The model should be validated. Finally, using the model the prediction of the provided test sets should be performed. Data was provided from this source: http://groupware.les.inf.puc-rio.br/har.</p>
+
+<p> Setting seed for reproducability purposes </p>
+
+<p>Downloading data</p>
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">getwd</span><span class="hl std">()</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] "D:/Working folder/Courses/Coursera Data Science/Practical Maching Learning/Assignment"
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">download.file</span><span class="hl std">(</span><span class="hl str">"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"</span><span class="hl std">,</span><span class="hl kwc">destfile</span><span class="hl std">=</span><span class="hl str">"./train.csv"</span><span class="hl std">)</span>
+<span class="hl std">train_data</span><span class="hl kwb">&lt;-</span><span class="hl kwd">read.csv</span><span class="hl std">(</span><span class="hl str">"./train.csv"</span><span class="hl std">)</span>
+<span class="hl kwd">download.file</span><span class="hl std">(</span><span class="hl str">"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"</span><span class="hl std">,</span><span class="hl kwc">destfile</span><span class="hl std">=</span><span class="hl str">"./test.csv"</span><span class="hl std">)</span>
+<span class="hl std">validation_data</span><span class="hl kwb">&lt;-</span><span class="hl kwd">read.csv</span><span class="hl std">(</span><span class="hl str">"./test.csv"</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+<p> Deleting empty and NA rows, since data has strange half empty variables </p>
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">train_data[train_data</span> <span class="hl opt">==</span> <span class="hl str">""</span><span class="hl std">]</span> <span class="hl kwb">&lt;-</span> <span class="hl num">NA</span>
+<span class="hl std">g</span><span class="hl kwb">=</span><span class="hl kwd">colnames</span><span class="hl std">(train_data)[</span><span class="hl kwd">colSums</span><span class="hl std">(</span><span class="hl kwd">is.na</span><span class="hl std">(train_data))</span> <span class="hl opt">==</span> <span class="hl num">0</span><span class="hl std">]</span>
+<span class="hl std">reduced_train</span><span class="hl kwb">&lt;-</span><span class="hl std">train_data[,g]</span>
+<span class="hl kwd">dim</span><span class="hl std">(reduced_train)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 19622    60
+</pre></div>
+</div></div>
+
+<p>Building train and test sets</p>
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(caret)</span>
+</pre></div>
+<div class="warning"><pre class="knitr r">## Warning: package 'caret' was built under R version 3.2.3
+</pre></div>
+<div class="message"><pre class="knitr r">## Loading required package: lattice
+## Loading required package: ggplot2
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl std">inTrain</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">createDataPartition</span><span class="hl std">(</span><span class="hl kwc">y</span><span class="hl std">=reduced_train</span><span class="hl opt">$</span><span class="hl std">classe,</span>
+                               <span class="hl kwc">p</span><span class="hl std">=</span><span class="hl num">0.75</span><span class="hl std">,</span> <span class="hl kwc">list</span><span class="hl std">=</span><span class="hl num">FALSE</span><span class="hl std">)</span>
+<span class="hl std">training</span> <span class="hl kwb">&lt;-</span> <span class="hl std">reduced_train[inTrain,</span><span class="hl num">7</span><span class="hl opt">:</span><span class="hl num">60</span><span class="hl std">]</span>
+<span class="hl std">testing</span> <span class="hl kwb">&lt;-</span> <span class="hl std">reduced_train[</span><span class="hl opt">-</span><span class="hl std">inTrain,</span><span class="hl num">7</span><span class="hl opt">:</span><span class="hl num">60</span><span class="hl std">]</span>
+<span class="hl kwd">dim</span><span class="hl std">(training)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 14718    54
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">dim</span><span class="hl std">(testing)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 4904   54
+</pre></div>
+</div></div>
+<p> Fitting decision trees algorithm </p>
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(rpart)</span>
+</pre></div>
+<div class="warning"><pre class="knitr r">## Warning: package 'rpart' was built under R version 3.2.3
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(rattle)</span>
+</pre></div>
+<div class="warning"><pre class="knitr r">## Warning: package 'rattle' was built under R version 3.2.3
+</pre></div>
+<div class="message"><pre class="knitr r">## Rattle: A free graphical interface for data mining with R.
+## Version 4.0.5 Copyright (c) 2006-2015 Togaware Pty Ltd.
+## Type 'rattle()' to shake, rattle, and roll your data.
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(rpart.plot)</span>
+</pre></div>
+<div class="warning"><pre class="knitr r">## Warning: package 'rpart.plot' was built under R version 3.2.3
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl std">modelFit</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">rpart</span><span class="hl std">(classe</span> <span class="hl opt">~</span> <span class="hl std">.,</span> <span class="hl kwc">data</span><span class="hl std">=training,</span> <span class="hl kwc">method</span><span class="hl std">=</span><span class="hl str">"class"</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+<p>Visualisation of the model</p>
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">fancyRpartPlot</span><span class="hl std">(modelFit)</span>
+</pre></div>
+</div><div class="rimage default"><img src="./Practical maching learning assignment_files/unnamed-chunk-5-1.png" title="plot of chunk unnamed-chunk-5" alt="plot of chunk unnamed-chunk-5" class="plot"></div></div>
+<p>Out-sample testing of the model</p>
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">test_prediction</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">predict</span><span class="hl std">(modelFit, testing,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">"class"</span><span class="hl std">)</span>
+<span class="hl kwd">confusionMatrix</span><span class="hl std">(test_prediction, testing</span><span class="hl opt">$</span><span class="hl std">classe)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1240  217   42   74   64
+##          B   43  480   39   20   71
+##          C   19   75  696  131   91
+##          D   73  113   57  525  102
+##          E   20   64   21   54  573
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.7166          
+##                  95% CI : (0.7037, 0.7291)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.6397          
+##  Mcnemar's Test P-Value : &lt; 2.2e-16       
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.8889  0.50580   0.8140   0.6530   0.6360
+## Specificity            0.8869  0.95626   0.9220   0.9159   0.9603
+## Pos Pred Value         0.7575  0.73507   0.6877   0.6034   0.7828
+## Neg Pred Value         0.9526  0.88967   0.9591   0.9308   0.9214
+## Prevalence             0.2845  0.19352   0.1743   0.1639   0.1837
+## Detection Rate         0.2529  0.09788   0.1419   0.1071   0.1168
+## Detection Prevalence   0.3338  0.13316   0.2064   0.1774   0.1493
+## Balanced Accuracy      0.8879  0.73103   0.8680   0.7844   0.7981
+</pre></div>
+</div></div>
+<p> Seperate testing data set prediction</p>
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">validation_pred</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">predict</span><span class="hl std">(modelFit, validation_data,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">"class"</span><span class="hl std">)</span>
+<span class="hl std">validation_pred</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+##  B  A  C  A  A  C  D  D  A  A  C  E  C  A  E  D  A  A  A  B 
+## Levels: A B C D E
+</pre></div>
+</div></div>
+
+
+
+
+
+</body></html>
