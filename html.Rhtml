@@ -1,0 +1,65 @@
+<html>
+
+<head>
+<title>Practical maching learning assignment</title>
+</head>
+
+<body>
+
+<p>The goal of the assignment was to build the prediction model for "classe" variable. The model should be validated. Finally, using the model the prediction of the provided test sets should be performed. Data was provided from this source: http://groupware.les.inf.puc-rio.br/har.</p>
+
+<p> Setting seed for reproducability purposes </p>
+<!--begin.rcode set.seed(4566)
+end.rcode-->
+<p>Downloading data</p>
+<!--begin.rcode
+getwd()
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",destfile="./train.csv")
+train_data<-read.csv("./train.csv")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",destfile="./test.csv")
+validation_data<-read.csv("./test.csv")
+end.rcode-->
+<p> Deleting empty and NA rows, since data has strange half empty variables </p>
+<!--begin.rcode
+train_data[train_data == ""] <- NA                                                   
+g=colnames(train_data)[colSums(is.na(train_data)) == 0]
+reduced_train<-train_data[,g]
+dim(reduced_train)
+end.rcode-->
+
+<p>Building train and test sets</p>
+<!--begin.rcode
+library(caret)
+inTrain <- createDataPartition(y=reduced_train$classe,
+                               p=0.75, list=FALSE)
+training <- reduced_train[inTrain,7:60]
+testing <- reduced_train[-inTrain,7:60]
+dim(training)
+dim(testing)
+end.rcode-->
+<p> Fitting decision trees algorithm </p>
+<!--begin.rcode
+library(rpart)
+library(rattle)
+library(rpart.plot)
+modelFit <- rpart(classe ~ ., data=training, method="class")
+end.rcode-->
+<p>Visualisation of the model</p>
+<!--begin.rcode 
+fancyRpartPlot(modelFit)
+end.rcode-->
+<p>Out-sample testing of the model</p>
+<!--begin.rcode
+test_prediction <- predict(modelFit, testing, type = "class")
+confusionMatrix(test_prediction, testing$classe)
+end.rcode-->
+<p> Seperate testing data set prediction</p>
+<!--begin.rcode
+validation_pred <- predict(modelFit, validation_data, type = "class")
+validation_pred
+end.rcode-->
+
+
+
+</body>
+</html>
